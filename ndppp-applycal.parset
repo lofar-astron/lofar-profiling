@@ -1,0 +1,4 @@
+msout.datacolumn=CORRECTED_DATA
+steps=[applycal]
+applycal.parmdb=instrument
+applycal.correction=gain

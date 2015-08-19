@@ -1,0 +1,13 @@
+steps=[preflagger,aoflagger,averager,gaincal]
+preflagger.baseline=*&&&
+#aoflagger.memorymax=4            # In gigabyte, knop voor memory
+averager.timestep=5
+averager.freqstep=8
+gaincal.sourcedb=3C196.sourcedb  # Sourcemodel moet je maken!, makesourcedb in=3c196.skymodel out=3c196.sourcedb format='<' 
+                                 # Knop: maak groter sourcedb (bijv. met gsm.py), voor CPU (in ska is sourcedb altijd groot, ~1000)
+gaincal.caltype=diagonal
+gaincal.parmdb=instrument
+gaincal.usebeammodel=true
+gaincal.tolerance=1.e-14         # Alway use maximum iterations
+gaincal.detectstalling=false     # Alway use maximum iterations
+gaincal.maxiter=50               # Default, knop voor CPU
