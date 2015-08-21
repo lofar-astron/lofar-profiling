@@ -31,7 +31,7 @@ run () {
 
 # Function to run and trace a pipeline component
 trace () {
-    decho $* | tee -a ${PIPELINE_LOG};
+    decho $* started | tee -a ${PIPELINE_LOG};
     python ${SCRIPT_DIR}/launch_trace.py ${SCRIPT_DIR} $*
     decho $* ended | tee -a ${PIPELINE_LOG};
 }
@@ -39,21 +39,28 @@ trace () {
 # Initialize lofar software
 source ${LOFARROOT}/lofarinit.sh
 
-# Set input and output file names
+# Input file names
 export DATA_SKYMODEL_INPUT=${DATA_DIR}/skymodel.dat
 export DATA_MS_INPUT=${DATA_DIR}/input.MS
+
+# Names of data products
 export DATA_SOURCEDB=${RUN_DIR}/sources.db
-export DATA_MS_NDPPP=${RUN_DIR}/ndppp.MS
+export DATA_PARMDB=${RUN_DIR}/instrument
+export DATA_MS_NDPPP=${RUN_DIR}/AVFIL.MS
+export DATA_MS_NDPPP_APPLYCAL=${RUN_DIR}/CAL.MS
+
+# Names of parsets
 export PARSET_NDPPP=${PARSET_DIR}/ndppp.parset
+export PARSET_NDPPP_APPLYCAL=${PARSET_DIR}/ndppp-applycal.parset
 
 # Start pipeline
 decho Starting pipeline | tee -a $pipeline_logs
 cd $RUN_DIR
 
-#${SCRIPT_DIR}/do_init.sh
+${SCRIPT_DIR}/do_init.sh
 run ${SCRIPT_DIR}/do_makesourcedb.sh
 trace ${SCRIPT_DIR}/do_ndppp.sh
-#run ./do_applycal.sh
+trace ${SCRIPT_DIR}/do_applycal.sh
 #run ./do_image.sh
 #run ./do_clean.sh
 #run ./do_bdsm.sh

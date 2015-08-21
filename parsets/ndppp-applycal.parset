@@ -1,4 +1,3 @@
-msout.datacolumn=CORRECTED_DATA
+#msout.datacolumn=CORRECTED_DATA    # This is not supported
 steps=[applycal]
-applycal.parmdb=instrument
 applycal.correction=gain

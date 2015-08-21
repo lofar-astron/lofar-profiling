@@ -1,7 +1,3 @@
-#! /usr/bin/env bash
-
-source /usr/lofarinit.sh
-
-time NDPPP ndppp-applycal.parset msin=3C196_AVFIL.MS msout=3C196_CAL.MS
-
-
+#!/bin/bash
+source ${LOFARROOT}/lofarinit.sh
+time NDPPP ${PARSET_NDPPP_APPLYCAL} msin=${DATA_MS_NDPPP} msout=${DATA_MS_NDPPP_APPLYCAL} applycal.parmdb=${DATA_PARMDB}
