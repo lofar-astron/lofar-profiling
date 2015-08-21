@@ -1,9 +1,3 @@
-#! /usr/bin/env bash
-
-source /usr/lofarinit.sh
-
-input_file=L86280_SAP001_SB235_uv.MS
-
-time NDPPP ndppp.parset msin=$input_file msout=3C196_AVFIL.MS #gaincal.debuglevel=10
-
-
+#!/bin/bash
+source ${LOFARROOT}/lofarinit.sh
+time NDPPP ${PARSET_NDPPP} msin=${DATA_MS_INPUT} msout=${DATA_MS_NDPPP} gaincal.sourcedb=${DATA_SOURCEDB}
