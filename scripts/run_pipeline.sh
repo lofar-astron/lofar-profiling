@@ -32,7 +32,7 @@ run () {
 # Function to run and trace a pipeline component
 trace () {
     decho $* started | tee -a ${PIPELINE_LOG};
-    python ${SCRIPT_DIR}/launch_trace.py ${SCRIPT_DIR} $*
+    python ${SCRIPT_DIR}/launch_trace.py ${SCRIPT_DIR} ${LOG_DIR} $*
     decho $* ended | tee -a ${PIPELINE_LOG};
 }
 
@@ -48,20 +48,22 @@ export DATA_SOURCEDB=${RUN_DIR}/sources.db
 export DATA_PARMDB=${RUN_DIR}/instrument
 export DATA_MS_NDPPP=${RUN_DIR}/AVFIL.MS
 export DATA_MS_NDPPP_APPLYCAL=${RUN_DIR}/CAL.MS
+export DATA_IMAGE_DIRTY=${RUN_DIR}/dirty.img
 
 # Names of parsets
 export PARSET_NDPPP=${PARSET_DIR}/ndppp.parset
-export PARSET_NDPPP_APPLYCAL=${PARSET_DIR}/ndppp-applycal.parset
+export PARSET_NDPPP_APPLYCAL=${PARSET_DIR}/ndppp_applycal.parset
+export PARSET_IMAGER_DIRTY=${PARSET_DIR}/awimager_dirty.parset
 
 # Start pipeline
 decho Starting pipeline | tee -a $pipeline_logs
 cd $RUN_DIR
 
-${SCRIPT_DIR}/do_init.sh
-run ${SCRIPT_DIR}/do_makesourcedb.sh
-trace ${SCRIPT_DIR}/do_ndppp.sh
-trace ${SCRIPT_DIR}/do_applycal.sh
-#run ./do_image.sh
+#${SCRIPT_DIR}/do_init.sh
+#run ${SCRIPT_DIR}/do_makesourcedb.sh
+#trace ${SCRIPT_DIR}/do_ndppp.sh
+#trace ${SCRIPT_DIR}/do_applycal.sh
+run ${SCRIPT_DIR}/do_image.sh
 #run ./do_clean.sh
 #run ./do_bdsm.sh
 #run ./do_clean_mask.sh

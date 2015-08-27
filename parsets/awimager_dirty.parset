@@ -1,8 +1,5 @@
 operation=image
-#operation=clean
 
-image=3C196_dirty.img
-ms=3C196_CAL.MS
 uvdist=0~2000lambda
 
 npix=1024          # knop voor CPU en memory
@@ -11,10 +8,5 @@ cellsize=12arcsec
 type=robust
 robust=0.0
 
-
-#clean.niter=1000
-#clean.maskimage='target_clean.mask'
-#clean.nscales=5
 padding=1.5
-#clean.threshold=1mJy
 timewindow=300
