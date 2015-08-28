@@ -1,7 +1,12 @@
 #!/bin/bash
 
-# Parameters
-LOFARROOT=/local/veenboer/opt/lofar
+# Check command line arguments
+if [[ $# -ne 1 ]]
+then
+    echo "Usage: $0 lofarroot"
+    exit
+fi
+LOFARROOT=$1
 
 # Set directories
 export SCRIPT_DIR=${PWD}/scripts
@@ -59,10 +64,10 @@ export PARSET_IMAGER_DIRTY=${PARSET_DIR}/awimager_dirty.parset
 decho Starting pipeline | tee -a $pipeline_logs
 cd $RUN_DIR
 
-#${SCRIPT_DIR}/do_init.sh
-#run ${SCRIPT_DIR}/do_makesourcedb.sh
-#trace ${SCRIPT_DIR}/do_ndppp.sh
-#trace ${SCRIPT_DIR}/do_applycal.sh
+${SCRIPT_DIR}/do_init.sh
+run ${SCRIPT_DIR}/do_makesourcedb.sh
+run ${SCRIPT_DIR}/do_ndppp.sh
+run ${SCRIPT_DIR}/do_applycal.sh
 run ${SCRIPT_DIR}/do_image.sh
 #run ./do_clean.sh
 #run ./do_bdsm.sh
