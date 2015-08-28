@@ -1,3 +1,6 @@
 #msout.datacolumn=CORRECTED_DATA    # This is not supported
 steps=[applycal]
 applycal.correction=gain
+msin=AVFIL.MS
+msout=CAL.MS
+applycal.parmdb=instrument

@@ -1,12 +1,10 @@
 operation=image
-
 uvdist=0~2000lambda
-
-npix=1024          # knop voor CPU en memory
-cellsize=12arcsec  
-
+npix=1024 # Knob for cpu/memory
+cellsize=12arcsec
 type=robust
 robust=0.0
-
 padding=1.5
 timewindow=300
+ms=CAL.MS
+image=dirty.img

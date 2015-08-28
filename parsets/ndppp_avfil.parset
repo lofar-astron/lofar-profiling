@@ -1,0 +1,13 @@
+steps=[preflagger,aoflagger,averager,gaincal]
+preflagger.baseline=*&&&
+#aoflagger.memorymax=4 # Knob to adjust maximum memory to use
+averager.timestep=5
+averager.freqstep=8
+gaincal.caltype=diagonal
+gaincal.parmdb=instrument
+gaincal.usebeammodel=true
+gaincal.tolerance=1.e-14     # Alway use maximum iterations
+gaincal.detectstalling=false # Alway use maximum iterations
+gaincal.maxiter=1            # Knob to adjust CPU intensity
+msout=AVFIL.MS
+gaincal.sourcedb=sources.db

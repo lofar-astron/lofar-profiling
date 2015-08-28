@@ -1,18 +1,12 @@
 operation=csclean
-
-image=3C196_clean.img
-ms=3C196_CAL.MS
 uvdist=0~2000lambda
-
-npix=1024
+npix=1024 # Knob for cpu/memory
 cellsize=12arcsec
-
 type=robust
 robust=0.0
-
-
 niter=1000
-
 padding=1.5
 threshold=1mJy
 timewindow=300
+ms=CAL.MS
+image=clean.img

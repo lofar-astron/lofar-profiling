@@ -29,7 +29,7 @@ decho () {
 
 # Function to run a pipeline component
 run () {
-    decho $* | tee -a ${PIPELINE_LOG};
+    decho $* started | tee -a ${PIPELINE_LOG};
     $*
     decho $* ended | tee -a ${PIPELINE_LOG};
 }
@@ -45,33 +45,23 @@ trace () {
 source ${LOFARROOT}/lofarinit.sh
 
 # Input file names
-export DATA_SKYMODEL_INPUT=${DATA_DIR}/skymodel.dat
-export DATA_MS_INPUT=${DATA_DIR}/input.MS
-
-# Names of data products
-export DATA_SOURCEDB=${RUN_DIR}/sources.db
-export DATA_PARMDB=${RUN_DIR}/instrument
-export DATA_MS_NDPPP=${RUN_DIR}/AVFIL.MS
-export DATA_MS_NDPPP_APPLYCAL=${RUN_DIR}/CAL.MS
-export DATA_IMAGE_DIRTY=${RUN_DIR}/dirty.img
+export DATA_INPUT_SKYMODEL=${DATA_DIR}/skymodel.dat
+export DATA_INPUT_MS=${DATA_DIR}/input.ms
 
 # Names of parsets
-export PARSET_NDPPP=${PARSET_DIR}/ndppp.parset
-export PARSET_NDPPP_APPLYCAL=${PARSET_DIR}/ndppp_applycal.parset
+export PARSET_NDPPP_AVFIL=${PARSET_DIR}/ndppp_avfil.parset
+export PARSET_NDPPP_CAL=${PARSET_DIR}/ndppp_cal.parset
 export PARSET_IMAGER_DIRTY=${PARSET_DIR}/awimager_dirty.parset
+export PARSET_IMAGER_CLEAN=${PARSET_DIR}/awimager_clean.parset
 
 # Start pipeline
 decho Starting pipeline | tee -a $pipeline_logs
 cd $RUN_DIR
-
 ${SCRIPT_DIR}/do_init.sh
 run ${SCRIPT_DIR}/do_makesourcedb.sh
-run ${SCRIPT_DIR}/do_ndppp.sh
-run ${SCRIPT_DIR}/do_applycal.sh
-run ${SCRIPT_DIR}/do_image.sh
-#run ./do_clean.sh
-#run ./do_bdsm.sh
-#run ./do_clean_mask.sh
-#run ./do_clean_multiscale.sh
+run ${SCRIPT_DIR}/do_ndppp_avfil.sh
+run ${SCRIPT_DIR}/do_ndppp_cal.sh
+run ${SCRIPT_DIR}/do_imager_dirty.sh
+run ${SCRIPT_DIR}/do_imager_clean.sh
 
 decho pipeline ended | tee -a $pipeline_logs
