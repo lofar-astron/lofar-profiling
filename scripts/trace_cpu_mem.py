@@ -48,6 +48,7 @@ I_VM = 22
 I_RSS = 23
 
 FSTAT = '/proc/stat'
+FMEMINFO = '/proc/meminfo'
 
 """
 ts:        time stamp
@@ -59,7 +60,7 @@ all:       cpu of all processes
 vm:        virtual memory size
 rss:       resident set size (memory portion)
 """
-pstat = namedtuple('pstat', 'ts u k cu ck all vm rss')
+pstat = namedtuple('pstat', 'ts u k cu ck vm rss sys_cpu sys_mem')
 
 
 def execCmd(cmd, failonerror = True):
@@ -85,11 +86,11 @@ def printSample(splList):
     """
     from prettytable import PrettyTable
     tbl = PrettyTable(["Time stamp", "User CPU", "Kernel CPU", "U-Child CPU", 
-                       "K-Child CPU", "All CPUs", "VM", "RSS"])
+                       "K-Child CPU", "VM", "RSS", "System CPU", "System Mem"])
     tbl.padding_width = 1 # One space between column edges and contents (default)
     
     for p in splList:
-        tbl.add_row([p.ts, p.u, p.k, p.cu, p.ck, p.all, p.vm, p.rss])
+        tbl.add_row([p.ts, p.u, p.k, p.cu, p.ck, p.vm, p.rss, p.sys_cpu, p.sys_mem])
     
     print tbl
 
@@ -98,7 +99,7 @@ def computeUsage(splList, printList = False, saveToFile = None):
     Convert from sample to CPU/memory usage
     
     splList    sample list (a list of samples (pstat))
-    Return:    a list of statistics (tuples[timestamp, total_cpu, kernel_cpu, vm, rss])
+    Return:    a list of statistics (tuples[timestamp, user_cpu, kernel_cpu, vm, rss, sys_cpu, sys_mem])
     """
     pgsz = getSysPageSize()
     reList = [] # 
@@ -109,31 +110,34 @@ def computeUsage(splList, printList = False, saveToFile = None):
     # refer to http://stackoverflow.com/questions/16726779/total-cpu-usage-of-an-application-from-proc-pid-stat
     Hertz = os.sysconf(os.sysconf_names['SC_CLK_TCK'])
     gc.disable()
+
     for i in range(leng - 1):
         sp1 = splList[i]
         sp2 = splList[i + 1]
-        
+
         tcpu1 = sp1.u + sp1.k + sp1.cu + sp1.ck
         tcpu2 = sp2.u + sp2.k + sp2.cu + sp2.ck
         kcpu1 = sp1.k + sp1.ck
         kcpu2 = sp2.k + sp2.ck
-        
-        #allcpu =  float(sp2.all - sp1.all)
+
         walltime = 1 # 1 seconds
         tu = int(100.0 * (tcpu2 - tcpu1) / Hertz / walltime)
-        ku = int(100.0 * (kcpu2 - kcpu1) / Hertz / walltime)
+        ku = int(100.0 * (kcpu2 - tcpu1) / Hertz / walltime)
+        allcpu = int(100.0 * (sp2.sys_cpu - sp1.sys_cpu) / Hertz / walltime)
+        allmem = sp2.sys_mem
         
-        itm = (sp2.ts, tu, ku, sp2.vm, pgsz * sp2.rss)
+        itm = (sp2.ts, tu, ku, sp2.vm, pgsz * sp2.rss, allcpu, allmem)
         reList.append(itm)
+
     gc.enable()
     
     if (printList):
         from prettytable import PrettyTable
-        tbl = PrettyTable(["Time stamp", "Total CPU %", "Kernel CPU %", "VM", "RSS"])
+        tbl = PrettyTable(["Time stamp", "Total CPU %", "Kernel CPU %", "VM", "RSS", "System  CPU %", "System Mem"])
         tbl.padding_width = 1
         
         for p in reList:
-            tbl.add_row([p[0], p[1], p[2], p[3], p[4]])
+            tbl.add_row([p[0], p[1], p[2], p[3], p[4], p[5], p[6]])
         
         print tbl
     
@@ -227,16 +231,27 @@ def processSample(raw_sample):
       env_end       address below which program environment is placed
       exit_code     the thread's exit_code in the form reported by the waitpid system call
     """
+    # Sample for specific pid
     pa_line = raw_sample[0]
-    cpu_line = raw_sample[1].replace('cpu', '')
-    ts = raw_sample[2]
-    
     pa = pa_line.split()
-    cpus = [int(x) for x in cpu_line.split()]
-    allcpus = sum(cpus)
+
+    # System wide cpu sample
+    cpu_line = raw_sample[1]
+    cpu_used = int(cpu_line.split()[1])
+
+    # System wide mem sample
+    mem_lines = raw_sample[2]
+    mem_values = [int(line.split()[1]) for line in mem_lines]
+    mem_total = mem_values[0]
+    mem_avail = mem_values[2]
+    mem_used = (mem_total - mem_avail)
+
+
+    # Timestamp
+    ts = raw_sample[3]
     
     ret = pstat(ts, int(pa[I_UT]), int(pa[I_ST]), int(pa[I_CUT]), int(pa[I_CST]), 
-                allcpus, int(pa[I_VM]), int(pa[I_RSS]))
+                int(pa[I_VM]), int(pa[I_RSS]), cpu_used, mem_used)
     
     return ret
 
@@ -246,42 +261,22 @@ def collectSample(pid):
     This will be called every N seconds
     
     pid:        process id (int) 
-                (this should have been validated before calling this function)
     
     Return:    an instance of the pstat namedtuple 
     """
-    fname = "/proc/%d/stat" % pid
-    lines = None
+    # Timestamp
     ts = time.time()
-    with open(fname) as f:
-        lines = f.readlines()
-    
-    with open(FSTAT, 'r') as f:
-        first_line = f.readline()
-    
-    """
-    # will this ever happen at all?
-    if (not lines or len(lines) < 1):
-        raise Exception('Cannot read file: %s' % fname)
-        
-    if (not first_line or len(first_line) < 1):
-        raise Exception('Cannot read file: %s' % FSTAT)
-    """
-    return (lines[0], first_line, ts)
+
+    # Read system wide samples
+    fstat_line = open(FSTAT).readline()
+    fmeminfo_lines = open(FMEMINFO).readlines()
+
+    # Read sample for specific pid
+    fstat_line_pid = open("/proc/%d/stat" % (pid)).readline()
+
+    return (fstat_line_pid, fstat_line, fmeminfo_lines, ts)
 
 ps = []
-
-def _testGetSample(options):
-    for i in range(10):
-        sst = time.time()
-        ps.append(collectSample(options.pid))
-        time.sleep(1 - (time.time() - sst))
-    
-    pas = [processSample(x) for x in ps]
-    printSample(pas)
-    computeUsage(pas, printList = True)
-
-
 
 def exitHandler(signum, frame):
     """
@@ -311,8 +306,6 @@ if __name__ == '__main__':
         print "Process with pid %d is not running!" % options.pid
         sys.exit(1)
     
-    #_testGetSample(options)
-    
     signal.signal(signal.SIGTERM, exitHandler)
     signal.signal(signal.SIGINT, exitHandler)
     
@@ -326,8 +319,3 @@ if __name__ == '__main__':
             
         ps.append(sp)
         time.sleep(1 - (time.time() - sst))
-    
-    
-    
-    
-    
