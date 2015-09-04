@@ -1,2 +1,2 @@
 #!/bin/bash
-makesourcedb in=${DATA_SKYMODELINPUT} out=sources.db format='<'
+makesourcedb in=${DATA_INPUT_SKYMODEL} out=sources.db format='<'

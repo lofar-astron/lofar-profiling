@@ -1,4 +1,5 @@
-#msout.datacolumn=CORRECTED_DATA    # This is not supported
+msin.datacolumn=DATA
+msout.datacolumn=DATA # CORRECTED_DATA not supported by NDPPP
 steps=[applycal]
 applycal.correction=gain
 msin=AVFIL.MS

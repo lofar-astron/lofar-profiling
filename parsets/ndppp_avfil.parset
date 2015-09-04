@@ -1,6 +1,6 @@
 steps=[preflagger,aoflagger,averager,gaincal]
 preflagger.baseline=*&&&
-#aoflagger.memorymax=4 # Knob to adjust maximum memory to use
+aoflagger.memorymax=16 # Knob to adjust maximum memory to use
 averager.timestep=5
 averager.freqstep=8
 gaincal.caltype=diagonal
