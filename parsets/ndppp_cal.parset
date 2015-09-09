@@ -1,7 +1,7 @@
 msin.datacolumn=DATA
 msout.datacolumn=DATA # CORRECTED_DATA not supported by NDPPP
 steps=[applycal]
-applycal.correction=gain
 msin=AVFIL.MS
+msout.overwrite=True
 msout=CAL.MS
 applycal.parmdb=instrument
