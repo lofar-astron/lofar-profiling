@@ -30,7 +30,7 @@
 #
 
 """
-trace cpu and memoery usage
+trace cpu and memory usage
 info from /proc
 """
 from collections import namedtuple
@@ -38,15 +38,76 @@ from optparse import OptionParser
 import os, sys, time, commands, gc, signal
 import cPickle as pickle
 
-# indices from the line
-# Specs - https://www.kernel.org/doc/Documentation/filesystems/proc.txt
-I_UT = 13
-I_ST = 14
-I_CUT = 15
-I_CST = 16
-I_VM = 22
-I_RSS = 23
 
+
+# /proc/[pid]/stat layout
+# Specs - https://www.kernel.org/doc/Documentation/filesystems/proc.txt
+proc_pid_stat='''
+pid           process id
+  tcomm         filename of the executable
+  state         state (R is running, S is sleeping, D is sleeping uninterruptible, Z is zombie, T is traced or stopped)
+  ppid          process id of the parent process
+  pgrp          pgrp of the process
+  sid           session id
+  tty_nr        tty the process uses
+  tty_pgrp      pgrp of the tty
+  flags         task flags
+  min_flt       number of minor faults
+  cmin_flt      number of minor faults with child's
+  maj_flt       number of major faults
+  cmaj_flt      number of major faults with child's
+  utime         user mode jiffies
+  stime         kernel mode jiffies
+  cutime        user mode jiffies with child's
+  cstime        kernel mode jiffies with child's
+  priority      priority level
+  nice          nice level
+  num_threads   number of threads
+  it_real_value (obsolete, always 0)
+  start_time    time the process started after system boot
+  vsize         virtual memory size
+  rss           resident set memory size
+  rsslim        current limit in bytes on the rss
+  start_code    address above which program text can run
+  end_code      address below which program text can run
+  start_stack   address of the start of the main process stack
+  esp           current value of ESP
+  eip           current value of EIP
+  pending       bitmap of pending signals
+  blocked       bitmap of blocked signals
+  sigign        bitmap of ignored signals
+  sigcatch      bitmap of caught signals
+  wchan         address where process went to sleep
+  plh0          (place holder)
+  plh1          (place holder)
+  exit_signal   signal to send to parent thread on exit
+  task_cpu      which CPU the task is scheduled on
+  rt_priority   realtime priority
+  policy        scheduling policy (man sched_setscheduler)
+  blkio_ticks   time spent waiting for block IO
+  gtime         guest time of the task in jiffies
+  cgtime        guest time of the task children in jiffies
+  start_data    address above which program data+bss is placed
+  end_data      address below which program data+bss is placed
+  start_brk     address above which program heap can be expanded with brk()
+  arg_start     address above which program command line is placed
+  arg_end       address below which program command line is placed
+  env_start     address above which program environment is placed
+  env_end       address below which program environment is placed
+  exit_code     the thread's exit_code in the form reported by the waitpid system call
+'''
+proc_pid_stat_dict=dict([(x.split()[0],i) for i,x in enumerate(proc_pid_stat.splitlines()[1:])])
+
+# Lookup indices of metrics
+I_UT  = proc_pid_stat_dict['utime']
+I_ST  = proc_pid_stat_dict['stime']
+I_CUT = proc_pid_stat_dict['cutime']
+I_CST = proc_pid_stat_dict['cstime']
+I_VM  = proc_pid_stat_dict['vsize']
+I_RSS = proc_pid_stat_dict['rss']
+
+
+# Stat file locations
 FSTAT = '/proc/stat'
 FMEMINFO = '/proc/meminfo'
 
@@ -156,81 +217,6 @@ def computeUsage(splList, printList = False, saveToFile = None):
     return reList
 
 def processSample(raw_sample):
-    """
-    Convert a raw sample into 
-    a sample tuple with proper fields (k-v pair)
-    
-    https://www.kernel.org/doc/Documentation/filesystems/proc.txt
-    
-    /proc/stat fields specification
-    Time units are in USER_HZ (typically hundredths of a second)
-    - user: normal processes executing in user mode
-    - nice: niced processes executing in user mode
-    - system: processes executing in kernel mode
-    - idle: twiddling thumbs
-    - iowait: waiting for I/O to complete
-    - irq: servicing interrupts
-    - softirq: servicing softirqs
-    - steal: involuntary wait
-    - guest: running a normal guest
-    - guest_nice: running a niced guest
-    
-    /proc/PID/stat fields specification
-    Field          Content
-      pid           process id
-      tcomm         filename of the executable
-      state         state (R is running, S is sleeping, D is sleeping in an
-                    uninterruptible wait, Z is zombie, T is traced or stopped)
-      ppid          process id of the parent process
-      pgrp          pgrp of the process
-      sid           session id
-      tty_nr        tty the process uses
-      tty_pgrp      pgrp of the tty
-      flags         task flags
-      min_flt       number of minor faults
-      cmin_flt      number of minor faults with child's
-      maj_flt       number of major faults
-      cmaj_flt      number of major faults with child's
-      utime         user mode jiffies
-      stime         kernel mode jiffies
-      cutime        user mode jiffies with child's
-      cstime        kernel mode jiffies with child's
-      priority      priority level
-      nice          nice level
-      num_threads   number of threads
-      it_real_value    (obsolete, always 0)
-      start_time    time the process started after system boot
-      vsize         virtual memory size
-      rss           resident set memory size
-      rsslim        current limit in bytes on the rss
-      start_code    address above which program text can run
-      end_code      address below which program text can run
-      start_stack   address of the start of the main process stack
-      esp           current value of ESP
-      eip           current value of EIP
-      pending       bitmap of pending signals
-      blocked       bitmap of blocked signals
-      sigign        bitmap of ignored signals
-      sigcatch      bitmap of caught signals
-      wchan         address where process went to sleep
-      0             (place holder)
-      0             (place holder)
-      exit_signal   signal to send to parent thread on exit
-      task_cpu      which CPU the task is scheduled on
-      rt_priority   realtime priority
-      policy        scheduling policy (man sched_setscheduler)
-      blkio_ticks   time spent waiting for block IO
-      gtime         guest time of the task in jiffies
-      cgtime        guest time of the task children in jiffies
-      start_data    address above which program data+bss is placed
-      end_data      address below which program data+bss is placed
-      start_brk     address above which program heap can be expanded with brk()
-      arg_start     address above which program command line is placed
-      arg_end       address below which program command line is placed
-      env_start     address above which program environment is placed
-      env_end       address below which program environment is placed
-      exit_code     the thread's exit_code in the form reported by the waitpid system call
-    """
     # Sample for specific pid
     pa_line = raw_sample[0]
     pa = pa_line.split()
@@ -245,7 +231,6 @@ def processSample(raw_sample):
     mem_total = mem_values[0]
     mem_avail = mem_values[2]
     mem_used = (mem_total - mem_avail)
-
 
     # Timestamp
     ts = raw_sample[3]
