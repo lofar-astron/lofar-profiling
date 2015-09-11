@@ -59,9 +59,9 @@ decho Starting pipeline | tee -a $pipeline_logs
 cd $RUN_DIR
 ${SCRIPT_DIR}/do_init.sh
 run ${SCRIPT_DIR}/do_makesourcedb.sh
-run ${SCRIPT_DIR}/do_ndppp_avfil.sh
-run ${SCRIPT_DIR}/do_ndppp_cal.sh
-run ${SCRIPT_DIR}/do_imager_dirty.sh
-run ${SCRIPT_DIR}/do_imager_clean.sh
+trace ${SCRIPT_DIR}/do_ndppp_avfil.sh
+trace ${SCRIPT_DIR}/do_ndppp_cal.sh
+trace ${SCRIPT_DIR}/do_imager_dirty.sh
+trace ${SCRIPT_DIR}/do_imager_clean.sh
 
 decho pipeline ended | tee -a $pipeline_logs
