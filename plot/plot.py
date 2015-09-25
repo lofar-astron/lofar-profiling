@@ -85,8 +85,8 @@ x_label="Time (minutes)"
 y1_label="CPU usage (%)"
 y2_label="Memory usage (Gb)"
 marker_color="red"
-line_width=1.5
-line_width_marker=3
+line_width=2.5
+line_width_marker=3.5
 
 # Plot left y-axis
 fig, ax1 = plt.subplots()
@@ -106,6 +106,14 @@ for tl in ax2.get_yticklabels():
 # Add markers
 for marker in all_markers:
     ax1.plot((marker,marker), (0, 100), color=marker_color, linewidth=line_width_marker)
+
+# Change font size
+font_size = 16
+axes = (ax1, ax2)
+for ax in axes:
+    for item in ([ax.title, ax.xaxis.label, ax.yaxis.label] +
+                 ax.get_xticklabels() + ax.get_yticklabels()):
+        item.set_fontsize(font_size)
 
 # Show plot
 plt.show()
