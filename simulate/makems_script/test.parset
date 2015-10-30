@@ -1,0 +1,16 @@
+NParts=0
+NBands=1
+NFrequencies=64
+StartFreq=1170e6
+StepFreq=100000
+StartTime=2000/08/03/13:22:30
+StepTime=10
+NTimes=14
+RightAscension=16:38:28.205274248
+Declination=62.34.44.313606568
+TileSizeFreq=8
+TileSizeRest=10
+WriteAutoCorr=T
+AntennaTableName=LOFAR_ANTENNA
+MSName=test.MS
+VDSPath=.
