@@ -1,0 +1,13 @@
+operation=csclean
+uvdist=0~2000lambda
+npix=2048 # Knob for cpu/memory
+cellsize=12arcsec
+type=robust
+robust=0.0
+niter=1000
+padding=1.5
+threshold=1mJy
+timewindow=300
+ms=TEST.MS
+data=DATA # CORRECTED_DATA not supported by NDPPP
+image=clean.img
