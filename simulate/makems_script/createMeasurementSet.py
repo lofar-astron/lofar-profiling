@@ -6,17 +6,19 @@ import subprocess as sp
 
 
 # Read command line arguments
-if len(sys.argv) < 3:
-    print "Usage: %s parset_filename output_ms_name" % sys.argv[0]
+if len(sys.argv) < 4:
+    print "Usage: %s skymodel parset_filename output_ms_name" % sys.argv[0]
     exit(0)
 else:
-    parset_filename = sys.argv[1]
-    output_ms_name = sys.argv[2]
+    sky_model_filename = sys.argv[1]
+    parset_filename = sys.argv[2]
+    output_ms_name = sys.argv[3]
 lofar_dir = os.environ["LOFARROOT"]
 antenna_set = "HBA_DUAL" # arguments? or in parset?
 print ("IMPROVE: the antenna set should be set in the use case description. " 
       "For now fixed:"), antenna_set
 
+print "{0:20}{1:40}".format("Sky model:", sky_model_filename)
 print "{0:20}{1:40}".format("Input parset:", parset_filename)
 print "{0:20}{1:40}".format("Output MS:", output_ms_name)
 print "{0:20}{1:40}".format("Using LOFARROOT:", lofar_dir)
@@ -62,12 +64,12 @@ os.remove(tmp_parset_filename);
 
 
 # Get a sky model (probably need CEP to do this)
-print ">>> Get global sky model."
+# print ">>> Get global sky model."
 # Coordinates come from pointing, msoverview in=test.MS
-sky_model_filename = "my.skymodel" 
-# gsm.py my.skymodel 16:38:28.205274 +62.34.44.31361 5
-print "WARNING: Sky model from GSM not implemented yet. Use test sky model for now."
-print ">>> Done."
+# sky_model_filename = "test.skymodel" 
+# gsm.py test.skymodel 16:38:28.205274 +62.34.44.31361 5
+# print "WARNING: Sky model from GSM not implemented yet. Use test sky model for now."
+# print ">>> Done."
 
 
 # Convert skymodel to sourcedb
