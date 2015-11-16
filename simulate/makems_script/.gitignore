@@ -1,0 +1,4 @@
+*.img*
+*.fits
+*.MS*
+*.pyc
