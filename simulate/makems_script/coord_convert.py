@@ -4,16 +4,9 @@ import sys
 from math import floor, radians, degrees
 from casacore import images
 
-Nfloor = 10
-#ra_center_pixel = 1025
-#ra_center_value = 240
-#ra_delta = -3.333333e-3
-
-#dec_center_pixel = 1025
-#dec_center_value = 62
-#dec_delta = 3.33333e-3
 
 # Start of image independent functions
+
 def deg2hr(deg):
     """input:  degrees as floating point
        output: hour angle as floating point"""
@@ -33,7 +26,7 @@ def deg2rastring(deg):
     hour_angle = int(floor(hr))
     hour_angle_minute = int(floor((hr-hour_angle)*60.)) 
     hour_angle_second = abs((hr - hour_angle - (hour_angle_minute/60.))*(60.*60.))
-    # assuming double precision: 17 digits, single precision would be 9 digits
+    # double precision: 17 digits
     return "{0:d}:{1:d}:{2:.17f}".format(hour_angle, hour_angle_minute, hour_angle_second)
 
 def deg2decstring(deg):
@@ -42,7 +35,7 @@ def deg2decstring(deg):
     degree = int(floor(deg))
     arc_minute = int(floor((deg - degree)*60.))
     arc_second = abs((deg - degree - (arc_minute/60.))*(60*60.))
-    # assuming double precision: 17 digits, single precision would be 9 digits
+    # double precision: 17 digits
     return "{0:d}.{1:d}.{2:.17f}".format(degree, arc_minute, arc_second)
 
 def rastring2deg(rastring):
@@ -65,6 +58,7 @@ def decstring2deg(decstring):
     deg = deg_degree + deg_minute + deg_second
     return deg
 
+
 # start of image dependent functions
 
 def pix2radec(image, i, j):
@@ -74,7 +68,6 @@ def pix2radec(image, i, j):
     casa_image = images.image(image)
     world_vals = casa_image.toworld((0,0,j,i)) # in: frequency, stokes (0-3), jpixel, ipixel
                                                # out: frequency, stokes (1-4), dec, ra
-    print(world_vals)
     ra = degrees(world_vals[3])
     dec = degrees(world_vals[2])
     return (ra, dec) 
@@ -89,8 +82,8 @@ def radec2pix(image, ra, dec):
     dec = radians(dec)
     pix_vals = casa_image.topixel((0,1,dec,ra)) # in: frequency, stokes (1-4), dec, ra
                                                 # out: frequency, stokes (0-3), jpixel, ipixel
-    i = int(floor(pix_vals[3])) # roundoff to prevent 1023.999999999999 to become 1023
-    j = int(floor(pix_vals[2])) # roundoff to prevent 1023.999999999999 to become 1023 
+    i = int(floor(pix_vals[3]))
+    j = int(floor(pix_vals[2]))
     return (i, j)
 
 def pix2radecstrings(image, i, j):
