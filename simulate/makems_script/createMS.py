@@ -66,7 +66,10 @@ def createMSpixel(skymodel, ms_parset, antenna_set, imager_parset,
     # use radec skymodel to create MS
     createMSradec(radec_skymodel, ms_parset, antenna_set, ms_name, lofar_dir)
 
-#    os.rmtree() remove tmp image
+    #    os.rmtree() # remove tmp image
+    os.remove(tmp_imager_parset)
+
+
 
 
 
