@@ -24,7 +24,8 @@ def predicate_in_pixels(skymodel):
 
 
 
-def createTmpImagerParset(in_parset, out_parset, image_name):
+def createTmpImagerParset(in_parset, out_parset, image_name, ms_name):
+    # TODO: make more robust; or better create generic tools to update parsets
     with open(in_parset) as in_fh:
         with open(out_parset, "w") as out_fh:
             for line in in_fh:
@@ -32,6 +33,19 @@ def createTmpImagerParset(in_parset, out_parset, image_name):
                     out_fh.write("operation=empty\n")
                 elif "image" in line:
                     out_fh.write("image={0:s}\n".format(image_name))
+                elif "ms=" in line:
+                    out_fh.write("ms={0:s}\n".format(ms_name))
+                else:
+                    out_fh.write(line)
+
+
+
+def createTmpMSParset(in_parset, out_parset, ms_name):
+    with open(in_parset) as in_fh:
+        with open(out_parset, "w") as out_fh:
+            for line in in_fh:
+                if "MSName" in line:
+                    out_fh.write("MSName=%s\n" % ms_name)
                 else:
                     out_fh.write(line)
 
@@ -47,17 +61,35 @@ def createMSpixel(skymodel, ms_parset, antenna_set, imager_parset,
                   ms_name, lofar_dir):
     """Input: skymodel using pixel locations
        Input: ..."""    
-    
 
-    # create temporary image to extract metadata
-    # TODO: create temporary parset to not simulate a long 
-    # observation here 
+    # create temporary image to extract metadata: 
+    # (1) create an empty MS set
+    # (2) run awimager with 'operation=empty' for metadata
+    # (3) create skymodel using the metadata
+    tmp_ms_name = ms_name + ".tmp"
+    tmp_ms_parset = ms_parset + ".tmp" 
     tmp_image_name = "image.img.tmp"
     tmp_imager_parset = imager_parset + ".tmp"
-    createTmpImagerParset(imager_parset, tmp_imager_parset, tmp_image_name)
+
+    createTmpMSParset(ms_parset, tmp_ms_parset, tmp_ms_name)
+    createTmpImagerParset(imager_parset, tmp_imager_parset, 
+                          tmp_image_name, tmp_ms_name)
+
+    cmd = ["makems", tmp_ms_parset]
+    try: 
+        sp.check_output(cmd, stderr=sp.STDOUT)
+    except sp.CalledProcessError:
+        # if cmd returns non-zero exit status
+        print "ERROR: ", cmd
+        exit(2);
 
     cmd = ["awimager", tmp_imager_parset]
-    sp.check_output(cmd, stderr=sp.STDOUT)
+    try: 
+        sp.check_output(cmd, stderr=sp.STDOUT)
+    except sp.CalledProcessError:
+        # if cmd returns non-zero exit status
+        print "ERROR: ", cmd
+        exit(2);
 
     # convert pixel sky model to radec skymodel
     radec_skymodel = skymodel + ".radec"
@@ -66,7 +98,9 @@ def createMSpixel(skymodel, ms_parset, antenna_set, imager_parset,
     # use radec skymodel to create MS
     createMSradec(radec_skymodel, ms_parset, antenna_set, ms_name, lofar_dir)
 
-    #    os.rmtree() # remove tmp image
+    print "CLEANUP: remove tmp image here"
+    #    shutils.rmtree() # remove tmp image
+    os.remove(tmp_ms_parset)
     os.remove(tmp_imager_parset)
 
 
