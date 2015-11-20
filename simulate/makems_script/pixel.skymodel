@@ -1,0 +1,4 @@
+FORMAT = Name, Type, RaAsPixel, DecAsPixel, I, Q, U, V, ReferenceFrequency='60e6', SpectralIndex='[0.0]', MajorAxis, MinorAxis, Orientation
+
+# the next lines define the sources
+0029.4+6100, POINT, 950, 950, 10.0, , , , , [-0.5962, -0.1592]
