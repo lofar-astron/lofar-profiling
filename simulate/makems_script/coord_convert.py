@@ -4,7 +4,6 @@ import sys
 from math import floor, radians, degrees
 from casacore import images
 
-Nfloor = 10
 #ra_center_pixel = 1025
 #ra_center_value = 240
 #ra_delta = -3.333333e-3
