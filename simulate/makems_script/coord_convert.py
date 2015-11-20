@@ -1,3 +1,5 @@
+#! /usr/bin/env python
+
 import sys
 from math import floor, radians, degrees
 from casacore import images
@@ -28,20 +30,20 @@ def deg2rastring(deg):
     """input:  degree as floating point.
        output: hour angle as hour.minute.second"""
     hr = deg2hr(deg)
-    # roundoff to Nfloor digits before flooring for machine precision issues.
-    hour_angle = int(floor(round(hr, Nfloor)))
-    hour_angle_minute = int(floor(round((hr-hour_angle)*60., Nfloor))) 
-    hour_angle_second = abs(round((hr - hour_angle - (hour_angle_minute/60.))*(60.*60.), Nfloor))
-    return "%s:%s:%s"%(hour_angle, hour_angle_minute, hour_angle_second)
+    hour_angle = int(floor(hr))
+    hour_angle_minute = int(floor((hr-hour_angle)*60.)) 
+    hour_angle_second = abs((hr - hour_angle - (hour_angle_minute/60.))*(60.*60.))
+    # assuming double precision: 17 digits, single precision would be 9 digits
+    return "{0:d}:{1:d}:{2:.17f}".format(hour_angle, hour_angle_minute, hour_angle_second)
 
 def deg2decstring(deg):
     """input:  degree as floating point. 
        output: degree as degree:arcminute:arcsecond"""
-    # roundoff to Nfloor digits before flooring for machine precision issues.
-    degree = int(floor(round(deg, Nfloor)))
-    arc_minute = int(floor(round((deg - degree)*60., Nfloor)))
-    arc_second = abs(round((deg - degree - (arc_minute/60.))*(60*60.), Nfloor))
-    return "%s.%s.%s"%(degree, arc_minute, arc_second)
+    degree = int(floor(deg))
+    arc_minute = int(floor((deg - degree)*60.))
+    arc_second = abs((deg - degree - (arc_minute/60.))*(60*60.))
+    # assuming double precision: 17 digits, single precision would be 9 digits
+    return "{0:d}.{1:d}.{2:.17f}".format(degree, arc_minute, arc_second)
 
 def rastring2deg(rastring):
     """input:  hour angle as hour.minute.second
@@ -72,6 +74,7 @@ def pix2radec(image, i, j):
     casa_image = images.image(image)
     world_vals = casa_image.toworld((0,0,j,i)) # in: frequency, stokes (0-3), jpixel, ipixel
                                                # out: frequency, stokes (1-4), dec, ra
+    print(world_vals)
     ra = degrees(world_vals[3])
     dec = degrees(world_vals[2])
     return (ra, dec) 
@@ -86,8 +89,8 @@ def radec2pix(image, ra, dec):
     dec = radians(dec)
     pix_vals = casa_image.topixel((0,1,dec,ra)) # in: frequency, stokes (1-4), dec, ra
                                                 # out: frequency, stokes (0-3), jpixel, ipixel
-    i = int(floor(round(pix_vals[3], Nfloor))) # roundoff to prevent 1023.999999999999 to become 1023
-    j = int(floor(round(pix_vals[2], Nfloor))) # roundoff to prevent 1023.999999999999 to become 1023 
+    i = int(floor(pix_vals[3])) # roundoff to prevent 1023.999999999999 to become 1023
+    j = int(floor(pix_vals[2])) # roundoff to prevent 1023.999999999999 to become 1023 
     return (i, j)
 
 def pix2radecstrings(image, i, j):
