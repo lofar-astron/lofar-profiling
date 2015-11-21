@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-./createMS.py --skymodel pixel.skymodel --ms_parset test.parset --antenna_set HBA_DUAL --ms_name TEST.MS --imager_parset test.awimager.dirty.parset
+./simulateMS.py --skymodel pixel.skymodel --ms_parset test.parset --antenna_set HBA_DUAL --ms_name TEST.MS --imager_parset test.awimager.dirty.parset
 
 # DIRTY IMAGE: awimager from LOFAR
 awimager test.awimager.dirty.parset

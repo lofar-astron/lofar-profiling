@@ -1,156 +1,149 @@
 #! /usr/bin/env python
 
-import sys, os
+
+import sys, os, shutil
 import argparse
-import createMS_radecSkymodel
 import subprocess as sp
-import convertSkymodel as csm
 
 
-def predicate_in_pixels(skymodel):
-    """Checks whether or not source locations are specified in pixels"""
-    with open(skymodel,'r') as fh:
-        for line in fh:
-            if len(line.strip()) == 0 or line.strip()[0] == "#":
-                pass
-            elif line.strip()[:6] == 'FORMAT':
-                line_split = [a.strip() for a in line.split(",")]
-                try:
-                    Ra_position = line_split.index("RaAsPixel")
-                    Dec_position = line_split.index("DecAsPixel")
-                except ValueError:
-                    return False
-                return True
+def createMeasurementSet(skymodel, 
+                         ms_parset, 
+                         ms_name, 
+                         antenna_set, 
+                         lofar_dir):
+    """Creates a simulated measurement set from a skymodel"""
 
-
-
-def createTmpImagerParset(in_parset, out_parset, image_name, ms_name):
-    # TODO: make more robust; or better create generic tools to update parsets
-    with open(in_parset) as in_fh:
-        with open(out_parset, "w") as out_fh:
-            for line in in_fh:
-                if "operation" in line:
-                    out_fh.write("operation=empty\n")
-                elif "image" in line:
-                    out_fh.write("image={0:s}\n".format(image_name))
-                elif "ms=" in line:
-                    out_fh.write("ms={0:s}\n".format(ms_name))
-                else:
-                    out_fh.write(line)
-
-
-
-def createTmpMSParset(in_parset, out_parset, ms_name):
-    with open(in_parset) as in_fh:
-        with open(out_parset, "w") as out_fh:
-            for line in in_fh:
+    # Create a temporary parset file
+    tmp_parset_filename = "makems_parset.tmp"
+    with open(ms_parset) as parset:
+        with open(tmp_parset_filename, "w") as tmp_parset:
+            for line in parset:
                 if "MSName" in line:
-                    out_fh.write("MSName=%s\n" % ms_name)
+                    tmp_parset.write("MSName=%s\n" % ms_name)
                 else:
-                    out_fh.write(line)
+                    tmp_parset.write(line)
 
 
-
-def createMSradec(skymodel, ms_parset, antenna_set, ms_name, lofar_dir):
-    createMS_radecSkymodel.createMeasurementSet(skymodel, ms_parset, 
-                                                ms_name, antenna_set, 
-                                                lofar_dir)
-
-
-def createMSpixel(skymodel, ms_parset, antenna_set, imager_parset, 
-                  ms_name, lofar_dir):
-    """Input: skymodel using pixel locations
-       Input: ..."""    
-
-    # create temporary image to extract metadata: 
-    # (1) create an empty MS set
-    # (2) run awimager with 'operation=empty' for metadata
-    # (3) create skymodel using the metadata
-    tmp_ms_name = ms_name + ".tmp"
-    tmp_ms_parset = ms_parset + ".tmp" 
-    tmp_image_name = "image.img.tmp"
-    tmp_imager_parset = imager_parset + ".tmp"
-
-    createTmpMSParset(ms_parset, tmp_ms_parset, tmp_ms_name)
-    createTmpImagerParset(imager_parset, tmp_imager_parset, 
-                          tmp_image_name, tmp_ms_name)
-
-    cmd = ["makems", tmp_ms_parset]
+    # Create empty MS
+    print ">>> Create empty MS." 
+    cmd = ["makems",tmp_parset_filename]
     try: 
         sp.check_output(cmd, stderr=sp.STDOUT)
     except sp.CalledProcessError:
         # if cmd returns non-zero exit status
         print "ERROR: ", cmd
         exit(2);
+    print "DONE!"
 
-    cmd = ["awimager", tmp_imager_parset]
-    try: 
+    # Add LOFAR station layout for beam model
+    cmd = ["makebeamtables", "ms=%s" %  ms_name, 
+           "antennaset=%s" % antenna_set, 
+           "antennasetfile=%s/etc/AntennaSets.conf" % lofar_dir,
+           "antennafielddir=%s/etc/StaticMetaData" % lofar_dir,
+           "ihbadeltadir=%s/src/MAC/Deployment/data/StaticMetaData/iHBADeltas/" % lofar_dir, 
+           "overwrite=true"]
+    try:
         sp.check_output(cmd, stderr=sp.STDOUT)
     except sp.CalledProcessError:
         # if cmd returns non-zero exit status
         print "ERROR: ", cmd
         exit(2);
 
-    # convert pixel sky model to radec skymodel
-    radec_skymodel = skymodel + ".radec"
-    csm.convertPixelSkymodelToWCS(skymodel, radec_skymodel, tmp_image_name)
+    os.remove(tmp_parset_filename);
 
-    # use radec skymodel to create MS
-    createMSradec(radec_skymodel, ms_parset, antenna_set, ms_name, lofar_dir)
+    # Convert skymodel to sourcedb
+    sourcedb_model_filename = "%s.sourcedb" % ms_name
+    cmd = ["makesourcedb", "in=%s" % skymodel, 
+           "out=%s" % sourcedb_model_filename, "format=<"]
+    try:
+        # the sourcedb needs to be removed, otherwise appended
+        shutil.rmtree(sourcedb_model_filename)
+    except:
+        pass
 
-    print "CLEANUP: remove tmp image here"
-    #    shutils.rmtree() # remove tmp image
-    os.remove(tmp_ms_parset)
-    os.remove(tmp_imager_parset)
+    try:
+        sp.check_output(cmd, stderr=sp.STDOUT)
+    except sp.CalledProcessError:
+        # if cmd returns non-zero exit status
+        print "ERROR: ", cmd
+        exit(2);
+        
+    # Predict skymodel as visibilities
+    print ">>> Predict skymodel as visibilities."
+    cmd = ["DPPP", "msin=%s" % ms_name, "msout=.", 
+           "steps=[predict]", 
+           "predict.sourcedb=%s" % sourcedb_model_filename, 
+           "predict.usebeammodel=true"]
+    try:
+        sp.check_output(cmd, stderr=sp.STDOUT)
+    except sp.CalledProcessError:
+        # if cmd returns non-zero exit status
+        print "ERROR: ", cmd
+        exit(2);
+    print "DONE!"
+
+
+    # Apply corruptions to the data
+    print "WARNING: Corruptions not implemented yet."
+    print ">>> Apply corruptions to the data."
+    # Create a parmdb for corruptions
+    # parmdbm
+    #  open table='my.parmdb'
+    #  adddef Gain:0:0:Real values=1
+    #  adddef Gain:1:1:Real values=1
+    #  adddef Gain:1:1:Real:CS002HBA0 values=3
+    #  Ctrl-D
+
+    # Apply corruptions to visibilities
+    # (Could have done two DPPP steps in one go with steps=[predict,correct])
+    # DPPP msin=test.MS msout=. steps=[correct] correct.parmdb=my.parmdb correct.invert=false
+
+    # Inspect corruptions
+    # parmdbplot.py my.parmdb
+
+    # Inspiration for more complicated corruptions:
+    # See ~/opt/lofar/trunk/src/CEP/DP3/DPPP/test/tApplyCal_parmdbscript for inspiration on parmdbs
+    # Or have a look at source of parmdbplot.py for python binding to parmdb
+    print "DONE!"
 
 
 
+    
 
 
 if __name__ == "__main__":
-    """Create a measurement from a skymodel"""
-    parser = argparse.ArgumentParser()
 
-    parser.add_argument('--skymodel', 
-                        help='skymodel (optional: source locations in pixels)',
-                        type=str, required=True)
-    parser.add_argument('--ms_parset', 
+    parser = argparse.ArgumentParser(
+        description="Creates a simulated measurement set from a skymodel. " +\
+        "Note: In most cases, use 'simulateMS.py' instead, as it also " +\
+        "allows to specify source locations in pixels in the skymodel. " +\
+        "This script only simulates the MS from a usual skymodel.")
+    parser.add_argument('-sm', '--skymodel', 
+                        help='Skymodel',
+                        required=True)
+    parser.add_argument('-msp','--ms_parset', 
                         help='Measurement set parset',
-                        type=str, required=True)
-    parser.add_argument('--antenna_set', 
-                        help='[LBA_INNER|LBA_OUTER|HBA_ZERO|HBA_ONE|' + \
-                        'HBA_JOINED|HBA_DUAL]', 
-                        type=str, required=False, default="HBA_DUAL")
-    parser.add_argument('--imager_parset', 
-                        help='Imager parset for creation of a dirty image ' + \
-                        '(required, if source locations ' + \
-                        'in pixels)', type=str, required=False)
-    parser.add_argument('--ms_name', 
+                        required=True)
+    parser.add_argument('-set', '--antenna_set', 
+                        help='LOFAR antenna sets',
+                        choices=['LBA_INNER','LBA_OUTER','HBA_ZERO','HBA_ONE',
+                        'HBA_JOINED','HBA_DUAL'],
+                        required=False, default="HBA_DUAL")
+    parser.add_argument('-ms','--ms_name', 
                         help='Name of the Measurement set created', 
-                        type=str, required=True)
+                        required=True)
     args = parser.parse_args()
+
+    # TODO: find out which values 'antenna_set' can take
 
     lofar_dir = os.environ["LOFARROOT"]
 
     print "{0:20}{1:40}".format("Sky model:", args.skymodel)
-    print "{0:20}{1:40}".format("MS parset:", args.ms_parset)
-    print "{0:20}{1:40}".format("Antenna set:", args.antenna_set)
-    print "{0:20}{1:40}".format("Imager parset:", args.imager_parset)
+    print "{0:20}{1:40}".format("Input parset:", args.ms_parset)
     print "{0:20}{1:40}".format("Output MS:", args.ms_name)
+    print "{0:20}{1:40}".format("Antenna set:", args.antenna_set)
     print "{0:20}{1:40}".format("Using LOFARROOT:", lofar_dir)
 
-    if predicate_in_pixels(args.skymodel):
-        # source locations specified in pixels
-        if (not args.imager_parset):
-            raise ValueError("Imager parset missing.")
-        else:
-            # source locations specified in pixels AND imager parset present
-            createMSpixel(args.skymodel, args.ms_parset,
-                          args.antenna_set, args.imager_parset, 
-                          args.ms_name, lofar_dir)
-    else:
-        # the skymodal is "normal"
-        createMSradec(args.skymodel, args.ms_parset, args.antenna_set, 
-                      args.ms_name, lofar_dir)
-        
+    createMeasurementSet(args.skymodel, args.ms_parset, 
+                         args.ms_name, args.antenna_set, lofar_dir);
     
