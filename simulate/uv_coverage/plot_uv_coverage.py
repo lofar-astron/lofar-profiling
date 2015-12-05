@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-plot_uvcoverage.py
+plot_uv_coverage.py
 
 This script is intended to provide a way to quickly plot uv coverage
 for LOFAR datasets. It uses 'pyrap' to read the MS.
