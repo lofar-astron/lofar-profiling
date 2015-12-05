@@ -63,8 +63,9 @@ def main(options):
                 if fileformat not in supported_formats:
                         print 'Error: Unknown file extension. Supported ', \
                                 supported_formats
-        axlimits = options.limits.split(',')
-	if len(axlimits) == 4:
+        axlimits = options.limits.strip().split(',')
+        print axlimits
+        if len(axlimits) == 4:
 		xmin,xmax,ymin,ymax = axlimits
 	else:
 		print 'Error: You must specify four axis limits'
@@ -255,16 +256,16 @@ def signal_handler(signal, frame):
 
 supported_formats = ['png','pdf','eps','ps']
 
-opt = argparse.ArgumentParser(description="Print UV coverage from a Measurement Set. Example: {0} -i example.MS -f example.png".format(__file__))
+opt = argparse.ArgumentParser(description="""Print UV coverage from a Measurement Set. Simple examples: (1) ${0} -i example.MS; or (2) ${0} -i example.MS -f example.png""".format(__file__))
 opt.add_argument('-i','--inms', help='Input MS(s) to plot [no default]. Multiple MS names can be given together, separated by commas. Wildcards are also accepted in order to make it easier to plot more than one MS at a time.', default='', required=True)
 opt.add_argument('-f','--filename', help="Image file name. If not specified, printing to the screen. If specified, needs to have formatting 'name.format' (e.g. example.png). Supported file formats: {0}".format(','.join(supported_formats)), default='', required=False)
-opt.add_argument('-l','--limits',help='Axis limits (comma separated in order: xmin,xmax,ymin,ymax), leave any of them blank to use data min/max [default ",,,"]',default=',,,', required=False)
-opt.add_argument('-t','--timeslots',help='Timeslots to use (comma separated and zero-based: start,skip,end) [default 0,0,0 = full time range, skipping such that 100 points are plotted per baseline]', default='0,0,0', required=False)
+opt.add_argument('-l','--limits',help="Axis limits (comma separated in order: '-l=xmin,xmax,ymin,ymax', leave any of them blank to use data min/max",default=',,,', required=False)
+opt.add_argument('-t','--timeslots',help="Timeslots to use (comma separated and zero-based: '-t=start,skip,end') [default 0,0,0 = full time range, skipping such that 100 points are plotted per baseline]", default='0,0,0', required=False)
 opt.add_argument('-a','--antennas',help='Antennas to use (comma separated list, zero-based) [default -1=all] Use -q to see a list of available antennas. Only antennas in this list are plotted. When plotting more than one MS this may not work well. To specify an inclusive range of antennas use .. format, e.g. -e 0..9 requests the first 10 antennas.',default='-1', required=False)
 opt.add_argument('-k','--kilolambda',help='Plot in kilolambda rather than meters? [default False]',default=False,action='store_true', required=False)
 opt.add_argument('-w','--wideband',help='Plot each channel separately? Only useful with -k. [default False]',default=False, action='store_true', required=False)
 opt.add_argument('-s','--sameuv',help='Assume same uv coordinates (in meters) for multiple MSs? This is useful if all input MSs are SBs of a single observation. It is NOT useful when combining MSs from different timeranges. [default False]',default=False,action='store_true')
-opt.add_argument('--title',help="Plot title [default: no title, 'inms': use MS name, string: use given string as title]",default='', required=False)
+opt.add_argument('--title',help="Plot title [default: no title; use string 'inms' to use the MS name; any other string for another title]",default='', required=False)
 opt.add_argument('-d','--debug',help='Run in debug mode? [default False]',default=False,action='store_true', required=False)
 opt.add_argument('-q','--query',help='Query mode (quits after reading dimensions, use for unfamiliar MSs) [default False]',default=False,action='store_true', required=False)
 options = opt.parse_args()
