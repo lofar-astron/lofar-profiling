@@ -1,6 +1,7 @@
 FROM  ubuntu:14.04
 
-RUN apt-get -y install wget && \
+RUN apt-get update && \
+    apt-get -y install wget && \
     echo deb http://dev.monetdb.org/downloads/deb/ trusty monetdb >  /etc/apt/sources.list.d/monetdb.list && \
     echo deb-src http://dev.monetdb.org/downloads/deb/ trusty monetdb >>  /etc/apt/sources.list.d/monetdb.list && \
     wget --output-document=- https://www.monetdb.org/downloads/MonetDB-GPG-KEY | sudo apt-key add - && \
