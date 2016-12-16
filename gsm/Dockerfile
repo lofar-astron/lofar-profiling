@@ -47,7 +47,7 @@ RUN mkdir -p ${HOME}/opt/lofar/build/gnu_opt && cd ${HOME}/opt/lofar && svn co -
     echo "#!/usr/bin/env bash" > ${HOME}/gsm && \
     echo "${HOME}/start_db_script > /tmp/monetlog &" >> ${HOME}/gsm && \
     echo "source ${HOME}/opt/lofarinit.sh" >> ${HOME}/gsm && \
-    echo "gsm.py ${HOME}/TMPFILE \$*" >> ${HOME}/gsm && \
+    echo "gsm.py ${HOME}/TMPFILE \$* > /dev/null" >> ${HOME}/gsm && \
     echo "cat ${HOME}/TMPFILE" >> ${HOME}/gsm && \
     chmod 744 ${HOME}/gsm && \
     sed -i.orig 's/^\( *\)db_host = .*/\1db_host = "localhost"/g' /home/monet/opt/bin/gsm.py
